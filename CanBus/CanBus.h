@@ -19,13 +19,16 @@ public:
   std::map<uint32_t, CAN_message_t> mestable;
   std::vector<CAN_message_t> senddata;
 
+  std::map<uint32_t, std::vector<CAN_message_t>> gotMessages;
+
   static CBTP_FNC &getInstance();
 
   void begin(int baudRate);
   void reset();
 
   void fetch();
-  void read(uint32_t canid, uint8_t data[8]);
+  int read(uint32_t canid, uint8_t data[8]);
+  int available(uint32_t canid) { return gotMessages[canid].size; };
 
   void stage(uint32_t canid, uint8_t buf[8]);
   void write();

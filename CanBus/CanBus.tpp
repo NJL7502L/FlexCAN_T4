@@ -26,14 +26,22 @@ CBTP_CLASS void CBTP_FNC::reset() {
 CBTP_CLASS void CBTP_FNC::fetch() {
   CAN_message_t msg;
   while (can.fetch(msg)) {
-    mestable[msg.id] = msg;
+    // mestable[msg.id] = msg;
+    gotMessages[msg.id].push_back(msg);
+    if (available(msg.id) > 10)
+      gotMessages[canid].erase(gotMessages[canid].begin());
   }
 }
 
 // ID指定でデータ読み出し
-CBTP_CLASS void CBTP_FNC::read(uint32_t canid, uint8_t data[8]) {
-  CAN_message_t msg = mestable[canid];
+CBTP_CLASS int CBTP_FNC::read(uint32_t canid, uint8_t data[8]) {
+  if (available(canid) == 0)
+    return 0;
+
+  CAN_message_t msg = gotMessages[canid].front();
   memcpy(data, msg.buf, 8);
+  gotMessages[canid].erase(gotMessages[canid].begin());
+  return 1;
 }
 
 // canmessageの生データをvectorに登録
