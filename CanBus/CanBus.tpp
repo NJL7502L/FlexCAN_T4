@@ -1,13 +1,13 @@
 #include "Arduino.h"
 #include <CanBus/CanBus.h>
 
-CBTP_CLASS CBTP_FNC::CanBus() {}
-CBTP_CLASS CBTP_FNC &CBTP_FNC::getInstance() {
+CBTP_FUNC CBTP_OPT::CanBus() {}
+CBTP_FUNC CBTP_OPT &CBTP_OPT::getInstance() {
   static CanBus canbus;
   return canbus;
 }
 
-CBTP_CLASS void CBTP_FNC::begin(int baudRate) {
+CBTP_FUNC void CBTP_OPT::begin(int baudRate) {
   this->baudRate = baudRate;
   can.begin();
   can.setBaudRate(baudRate);
@@ -15,50 +15,48 @@ CBTP_CLASS void CBTP_FNC::begin(int baudRate) {
   delay(500);
 }
 
-CBTP_CLASS void CBTP_FNC::reset() {
+CBTP_FUNC void CBTP_OPT::reset() {
   can.reset();
-  mestable.clear();
-  senddata.clear();
+  rxMap.clear();
+  while (!txQueue.empty())
+    txQueue.pop();
   begin(baudRate);
 }
 
 // canbusからデータを受信する関数
-CBTP_CLASS void CBTP_FNC::fetch() {
+CBTP_FUNC void CBTP_OPT::fetch() {
   CAN_message_t msg;
-  while (can.fetch(msg)) {
-    // mestable[msg.id] = msg;
-    gotMessages[msg.id].push_back(msg);
-    if (available(msg.id) > 10)
-      gotMessages[canid].erase(gotMessages[canid].begin());
+  while (can.read(msg)) {
+    rxMap[msg.id].limitPush(msg);
   }
 }
 
 // ID指定でデータ読み出し
-CBTP_CLASS int CBTP_FNC::read(uint32_t canid, uint8_t data[8]) {
+CBTP_FUNC int CBTP_OPT::read(uint32_t canid, uint8_t data[8]) {
   if (available(canid) == 0)
     return 0;
 
-  CAN_message_t msg = gotMessages[canid].front();
+  CAN_message_t msg = rxMap[canid].front();
   memcpy(data, msg.buf, 8);
-  gotMessages[canid].erase(gotMessages[canid].begin());
+  rxMap[msg.id].pop();
   return 1;
 }
 
-// canmessageの生データをvectorに登録
-CBTP_CLASS void CBTP_FNC::stage(uint32_t canid, uint8_t buf[8]) {
+CBTP_FUNC void CBTP_OPT::stage(uint32_t canid, uint8_t buf[8]) {
   CAN_message_t msg;
   msg.id = canid;
   for (int i = 0; i < 8; i++) {
     msg.buf[i] = buf[i];
   }
   msg.len = 8;
-  senddata.push_back(msg);
+  txQueue.limitPush(msg);
 }
+// 後でstage(can_message_t message)に対応したやつも作る
 
 // CANBusにデータを送信
-CBTP_CLASS void CBTP_FNC::write() {
-  for (CAN_message_t outmes : senddata) {
-    can.write(outmes);
+CBTP_FUNC void CBTP_OPT::write() {
+  while (!txQueue.empty()) {
+    can.write(txQueue.front());
+    txQueue.pop();
   }
-  senddata.clear();
 }
