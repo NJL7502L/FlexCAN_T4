@@ -1,11 +1,11 @@
 #ifndef CanBus_h
 #define CanBus_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include <map>
 #include <queue>
 #include <vector>
-#include <FlexCAN_T4.h>
+#include "../FlexCAN_T4.h"
 
 #define CBTP_CLASS                                                             \
   template <CAN_DEV_TABLE BUS, int RX_LIMIT = 10, int TX_LIMIT = 10>

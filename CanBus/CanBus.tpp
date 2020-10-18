@@ -1,5 +1,5 @@
-#include "Arduino.h"
-#include <CanBus/CanBus.h>
+#include <Arduino.h>
+#include "CanBus.h"
 
 CBTP_FUNC CBTP_OPT::CanBus() {}
 CBTP_FUNC CBTP_OPT &CBTP_OPT::getInstance() {
